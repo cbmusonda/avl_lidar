@@ -1,0 +1,18 @@
+velodyne_driver_node:
+  ros__parameters:
+    device_ip: "192.168.13.11"
+    port: 2368
+    model: VLP16
+    rpm: 600.0
+    frame_id: velodyne
+
+velodyne_transform_node:
+  ros__parameters:
+    model: VLP16
+    frame_id: velodyne
+    fixed_frame: velodyne
+    target_frame: velodyne
+    min_range: 0.4
+    max_range: 100.0
+    view_direction: 0.0
+    view_width: 6.28319

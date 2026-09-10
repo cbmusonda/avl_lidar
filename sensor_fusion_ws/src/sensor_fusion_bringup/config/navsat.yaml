@@ -1,0 +1,32 @@
+# navsat_transform_node configuration, adapted from IGVC_ROS2's
+# src/avros_bringup/config/navsat.yaml.
+#
+# Converts GPS (NavSatFix, /gnss) to Cartesian odometry (/odometry/gps) for
+# the global EKF (ekf_filter_node_map, see ekf.yaml) to fuse.
+# The map -> odom TF is published by ekf_filter_node_map, NOT this node.
+
+navsat_transform:
+  ros__parameters:
+    frequency: 30.0
+    delay: 3.0
+
+    # Xsens MTi-680G outputs ENU (yaw=0 facing east) with its own internal
+    # World Magnetic Model declination correction already applied.
+    magnetic_declination_radians: 0.0
+    yaw_offset: 0.0
+
+    zero_altitude: true
+    use_odometry_yaw: false
+    wait_for_datum: true
+    # Datum anchors the local Cartesian frame: [lat_deg, lon_deg, heading_rad].
+    # MUST be updated to a real coordinate near your test site before this
+    # node will do anything useful -- 0,0,0 below is a placeholder, not a
+    # real anchor. Set it directly here, or call the /datum service at
+    # runtime with a live GPS fix and persist the result back into this
+    # file. wait_for_datum/use_odometry_yaw/broadcast_cartesian_transform
+    # are coupled (per robot_localization's dual-EKF guidance): don't flip
+    # wait_for_datum to false without also revisiting the other two, or
+    # you can create a map->odom TF loop against ekf_filter_node_map.
+    datum: [0.0, 0.0, 0.0]  # TODO: set to your test site's [lat, lon, 0.0]
+    publish_filtered_gps: true
+    broadcast_cartesian_transform: false  # ekf_filter_node_map owns map -> odom

@@ -1,0 +1,19 @@
+# ROS 2 generated workspace artifacts
+sensor_fusion_ws/build/
+sensor_fusion_ws/install/
+sensor_fusion_ws/log/
+
+# Python generated files
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+
+# Local editor and OS files
+.vscode/
+.idea/
+.DS_Store
+
+# Local ROS/runtime data
+*.db
+*.bag
+*.bag.active

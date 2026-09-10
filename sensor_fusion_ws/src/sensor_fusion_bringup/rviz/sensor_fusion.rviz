@@ -1,0 +1,60 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: true
+    - Class: rviz_default_plugins/PointCloud2
+      Name: LidarObstacles
+      Topic:
+        Value: /perception/lidar_obstacles
+      Enabled: true
+      Color: 255; 255; 0
+      Size (m): 0.05
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Voxels
+      Topic:
+        Value: /perception/voxels
+      Enabled: true
+      Color: 255; 0; 0
+      Size (m): 0.25
+      Style: Boxes
+    - Class: rviz_default_plugins/PointCloud2
+      Name: VoxelsInflated
+      Topic:
+        Value: /perception/voxels_inflated
+      Enabled: false
+      Style: Boxes
+      Size (m): 0.25
+    - Class: rviz_default_plugins/MarkerArray
+      Name: VoxelMarkers
+      Topic:
+        Value: /perception/voxel_markers
+      Enabled: false
+    - Class: rviz_default_plugins/Map
+      Name: ObstacleCostmap2D
+      Topic:
+        Value: /perception/obstacle_costmap_2d
+      Enabled: false
+  Global Options:
+    Fixed Frame: base_link
+  Tools:
+    - Class: rviz_default_plugins/Interact
+    - Class: rviz_default_plugins/MoveCamera
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 20
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0
+Window Geometry:
+  Height: 900
+  Width: 1400

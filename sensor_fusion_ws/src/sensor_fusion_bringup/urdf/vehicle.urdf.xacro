@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<robot name="vehicle" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Sensor offsets from base_link, per IGVC_ROS2's documented approximate
+       mounts. These are placeholders: physical measurement on the real
+       chassis is required before trusting the resulting TF for mapping,
+       per SENSOR_FUSION_BRIEF.md. -->
+  <xacro:property name="imu_xyz" value="0.0 0.0 0.5"/>
+  <xacro:property name="velodyne_xyz" value="0.089 0.0 0.659"/>
+
+  <!-- Visual/collision/inertial mesh deferred; this URDF exists to give
+       robot_state_publisher the static TF chain base_link -> imu_link
+       and base_link -> velodyne, nothing more, for v1. -->
+  <link name="base_link"/>
+
+  <link name="imu_link"/>
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="${imu_xyz}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Link name "velodyne" must exactly match the frame_id param given to
+       velodyne_transform_node in config/velodyne.yaml. -->
+  <link name="velodyne"/>
+  <joint name="velodyne_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="velodyne"/>
+    <origin xyz="${velodyne_xyz}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Future depth-camera mounts (zed_front, zed_left, ...) go here,
+       using vendor-provided camera URDF macros per IGVC_ROS2 convention.
+       Not required for the v1 LiDAR/IMU-only deliverable. -->
+
+</robot>

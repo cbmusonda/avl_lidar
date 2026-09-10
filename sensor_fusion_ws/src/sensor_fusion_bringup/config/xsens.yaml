@@ -1,0 +1,12 @@
+# Params for xsens_mti_ros2_driver. NOTE: the exact param names below
+# (especially for the serial port and output topic) are unverified against
+# the driver's actual documentation -- avl_slam uses ros2_xsens_mti_driver,
+# a different package, so its config can't be assumed to transfer directly.
+# sensors.launch.py additionally forces the fused IMU output onto
+# /imu/data via a launch-level topic remap, which does not depend on these
+# param names being exactly right.
+xsens_mti_node:
+  ros__parameters:
+    frame_id: imu_link
+    port: /dev/ttyUSB0
+    baudrate: 115200

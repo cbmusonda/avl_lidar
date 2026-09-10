@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Adapted from IGVC_ROS2's src/avros_bringup/config/cyclonedds.xml.
+  IGVC_ROS2's own known-issues notes documented FastDDS corrupting action
+  goal payloads when directly-instantiated nodes (EKFs, navsat_transform)
+  came up on a different RMW default than the sensor stack. Since this
+  workspace now uses the same robot_localization nodes, integration.launch.py
+  forces every node onto CycloneDDS with this config to avoid that class of
+  interop bug.
+-->
+<CycloneDDS xmlns="https://cdds.io/config"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="https://cdds.io/config">
+  <Domain>
+    <General>
+      <Interfaces>
+        <NetworkInterface autodetermine="true"/>
+      </Interfaces>
+      <AllowMulticast>default</AllowMulticast>
+    </General>
+    <Internal>
+      <SocketReceiveBufferSize min="10MB"/>
+    </Internal>
+    <SharedMemory>
+      <Enable>false</Enable>
+      <LogLevel>info</LogLevel>
+    </SharedMemory>
+  </Domain>
+</CycloneDDS>
