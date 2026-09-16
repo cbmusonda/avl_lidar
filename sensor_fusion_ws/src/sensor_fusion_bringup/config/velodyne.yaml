@@ -12,7 +12,8 @@ velodyne_transform_node:
     frame_id: velodyne
     fixed_frame: velodyne
     target_frame: velodyne
+    calibration: "/opt/ros/humble/share/velodyne_pointcloud/params/VLP16db.yaml"
     min_range: 0.4
     max_range: 100.0
     view_direction: 0.0
-    view_width: 6.28319
+    view_width: 6.28

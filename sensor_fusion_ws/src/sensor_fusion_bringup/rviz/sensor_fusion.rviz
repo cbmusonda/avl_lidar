@@ -14,6 +14,10 @@ Visualization Manager:
       Name: LidarObstacles
       Topic:
         Value: /perception/lidar_obstacles
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
       Enabled: true
       Color: 255; 255; 0
       Size (m): 0.05
@@ -21,6 +25,10 @@ Visualization Manager:
       Name: Voxels
       Topic:
         Value: /perception/voxels
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
       Enabled: true
       Color: 255; 0; 0
       Size (m): 0.25
@@ -29,6 +37,10 @@ Visualization Manager:
       Name: VoxelsInflated
       Topic:
         Value: /perception/voxels_inflated
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
       Enabled: false
       Style: Boxes
       Size (m): 0.25

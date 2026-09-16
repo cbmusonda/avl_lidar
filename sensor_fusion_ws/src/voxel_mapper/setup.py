@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
             'lidar_preprocessor = voxel_mapper.lidar_preprocessor:main',
             'voxel_mapper_node = voxel_mapper.voxel_mapper_node:main',
+            'fake_lidar_publisher = voxel_mapper.fake_lidar_publisher:main',
         ],
     },
 )
