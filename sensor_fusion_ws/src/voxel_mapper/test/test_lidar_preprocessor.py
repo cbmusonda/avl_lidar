@@ -4,14 +4,17 @@ from sensor_msgs_py import point_cloud2
 from std_msgs.msg import Header
 
 from voxel_mapper.lidar_preprocessor import (
+    align_plane_sign,
     apply_height_band,
     apply_transform,
+    classify_ground_inliers,
     downsample_voxel,
     fit_ground_plane_ransac,
     is_sensor_healthy,
     pointcloud2_to_xyz_array,
     range_filter,
     remove_ground,
+    smooth_plane,
     transform_matrix_from_stamped,
 )
 
@@ -113,6 +116,68 @@ def test_remove_ground_returns_non_inliers():
     obstacles = remove_ground(points, mask)
     assert obstacles.shape[0] == 1
     assert np.allclose(obstacles[0], [1, 1, 1])
+
+
+# ---- ground plane smoothing --------------------------------------------
+
+
+def test_align_plane_sign_flips_opposing_normal():
+    reference = np.array([0.0, 0.0, 1.0, 0.0])
+    flipped = np.array([0.0, 0.0, -1.0, 0.0])
+    aligned = align_plane_sign(flipped, reference)
+    assert np.allclose(aligned, [0.0, 0.0, 1.0, 0.0])
+
+
+def test_align_plane_sign_leaves_matching_normal():
+    reference = np.array([0.0, 0.0, 1.0, 0.0])
+    same = np.array([0.0, 0.0, 1.0, -0.1])
+    aligned = align_plane_sign(same, reference)
+    assert np.allclose(aligned, same)
+
+
+def test_smooth_plane_first_fit_returns_candidate_unchanged():
+    candidate = np.array([0.0, 0.0, 1.0, -0.2])
+    smoothed = smooth_plane(None, candidate, alpha=0.25)
+    assert np.allclose(smoothed, candidate)
+
+
+def test_smooth_plane_blends_toward_candidate():
+    previous = np.array([0.0, 0.0, 1.0, 0.0])
+    candidate = np.array([0.0, 0.0, 1.0, -1.0])
+    smoothed = smooth_plane(previous, candidate, alpha=0.25)
+    # Blended d should move partway from 0 toward -1, not jump all the way.
+    assert -1.0 < smoothed[3] < 0.0
+    assert abs(smoothed[3] - (-0.25)) < 0.05
+
+
+def test_smooth_plane_aligns_sign_flipped_candidate_before_blending():
+    previous = np.array([0.0, 0.0, 1.0, 0.0])
+    flipped_candidate = np.array([0.0, 0.0, -1.0, 1.0])  # same plane, opposite sign
+    smoothed = smooth_plane(previous, flipped_candidate, alpha=0.5)
+    # Should blend as if candidate were [0,0,1,-1], not cancel toward zero.
+    assert smoothed[2] > 0.9
+    assert smoothed[3] < 0.0
+
+
+def test_smooth_plane_stays_unit_normal():
+    previous = np.array([0.0, 0.0, 1.0, 0.0])
+    candidate = np.array([0.1, 0.05, 0.99, -0.3]) / np.linalg.norm([0.1, 0.05, 0.99])
+    smoothed = smooth_plane(previous, candidate, alpha=0.3)
+    assert np.isclose(np.linalg.norm(smoothed[:3]), 1.0)
+
+
+def test_classify_ground_inliers_matches_threshold():
+    plane = np.array([0.0, 0.0, 1.0, 0.0])  # z = 0 plane
+    points = np.array([[0, 0, 0.02], [0, 0, 0.2], [5, 5, -0.01]])
+    mask = classify_ground_inliers(points, plane, distance_threshold=0.05)
+    assert mask.tolist() == [True, False, True]
+
+
+def test_classify_ground_inliers_empty_points():
+    plane = np.array([0.0, 0.0, 1.0, 0.0])
+    points = np.empty((0, 3))
+    mask = classify_ground_inliers(points, plane, distance_threshold=0.05)
+    assert mask.shape == (0,)
 
 
 # ---- height band ------------------------------------------------------

@@ -136,6 +136,56 @@ def remove_ground(points_xyz: np.ndarray, inlier_mask: np.ndarray) -> np.ndarray
     return points_xyz[~inlier_mask]
 
 
+def align_plane_sign(coeffs: np.ndarray, reference: np.ndarray) -> np.ndarray:
+    """
+    Flip coeffs' sign if needed so its normal points the same way as reference's.
+
+    RANSAC's cross-product normal direction depends on sample order and is
+    arbitrary per fit -- two fits of the same physical plane can come back
+    as [a,b,c,d] or [-a,-b,-c,-d]. Averaging those directly would cancel
+    instead of reinforcing, so callers doing temporal blending must align
+    signs first.
+    """
+    if np.dot(coeffs[:3], reference[:3]) < 0:
+        return -coeffs
+    return coeffs
+
+
+def smooth_plane(
+    previous: Optional[np.ndarray], candidate: np.ndarray, alpha: float
+) -> np.ndarray:
+    """
+    Exponentially blend a new RANSAC plane fit onto a running estimate.
+
+    A ground vehicle's ground plane changes gradually (ramps, curbs, terrain
+    undulation) even though an unseeded per-frame RANSAC fit on essentially
+    the same points can jitter between fits from run to run. Blending
+    trades a bit of lag for a stable plane, which is what should be used to
+    classify ground vs. obstacle points, rather than each frame's raw fit.
+
+    alpha is the weight given to the new candidate fit (0 < alpha <= 1);
+    previous=None (first fit) returns candidate unchanged.
+    """
+    if previous is None:
+        return candidate
+    aligned = align_plane_sign(candidate, previous)
+    blended = alpha * aligned + (1.0 - alpha) * previous
+    norm = np.linalg.norm(blended[:3])
+    if norm < 1e-9:
+        return previous
+    return blended / norm
+
+
+def classify_ground_inliers(
+    points_xyz: np.ndarray, plane_coeffs: np.ndarray, distance_threshold: float
+) -> np.ndarray:
+    """Boolean mask of points within distance_threshold of plane_coeffs."""
+    if points_xyz.shape[0] == 0:
+        return np.zeros(0, dtype=bool)
+    dist = np.abs(points_xyz @ plane_coeffs[:3] + plane_coeffs[3])
+    return dist <= distance_threshold
+
+
 def apply_height_band(
     points_xyz: np.ndarray, z_min: float, z_max: float
 ) -> np.ndarray:
@@ -206,6 +256,8 @@ class LidarPreprocessorNode(Node):
         self.declare_parameter("ransac_iterations", 50)
         self.declare_parameter("ransac_candidate_band", 0.5)
         self.declare_parameter("ransac_distance_threshold", 0.1)
+        self.declare_parameter("ground_plane_ransac_seed", 42)
+        self.declare_parameter("ground_plane_smoothing_alpha", 0.25)
         self.declare_parameter("height_band_min", -0.8)
         self.declare_parameter("height_band_max", 3.0)
         self.declare_parameter("sensor_timeout_sec", 0.5)
@@ -239,6 +291,7 @@ class LidarPreprocessorNode(Node):
         self.health_pub = self.create_publisher(Bool, "/perception/lidar_health", 10)
 
         self._last_msg_time: Optional[float] = None
+        self._smoothed_ground_plane: Optional[np.ndarray] = None
         self._timeout_timer = self.create_timer(0.2, self._check_timeout)
 
     def _check_timeout(self):
@@ -276,12 +329,28 @@ class LidarPreprocessorNode(Node):
         matrix = transform_matrix_from_stamped(tf)
         points_base = apply_transform(points, matrix)
 
-        _, inlier_mask = fit_ground_plane_ransac(
+        distance_threshold = self.get_parameter("ransac_distance_threshold").value
+        candidate_coeffs, _ = fit_ground_plane_ransac(
             points_base,
             iterations=self.get_parameter("ransac_iterations").value,
-            distance_threshold=self.get_parameter("ransac_distance_threshold").value,
+            distance_threshold=distance_threshold,
             candidate_band=self.get_parameter("ransac_candidate_band").value,
+            seed=self.get_parameter("ground_plane_ransac_seed").value,
         )
+        if candidate_coeffs is not None:
+            self._smoothed_ground_plane = smooth_plane(
+                self._smoothed_ground_plane,
+                candidate_coeffs,
+                self.get_parameter("ground_plane_smoothing_alpha").value,
+            )
+
+        if self._smoothed_ground_plane is not None:
+            inlier_mask = classify_ground_inliers(
+                points_base, self._smoothed_ground_plane, distance_threshold
+            )
+        else:
+            inlier_mask = np.zeros(points_base.shape[0], dtype=bool)
+
         obstacles = remove_ground(points_base, inlier_mask)
         obstacles = apply_height_band(
             obstacles,
