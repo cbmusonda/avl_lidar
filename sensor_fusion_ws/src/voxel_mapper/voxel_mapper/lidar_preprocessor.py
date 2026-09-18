@@ -195,6 +195,34 @@ def apply_height_band(
     return points_xyz[mask]
 
 
+def remove_self_footprint(
+    points_xyz: np.ndarray,
+    x_range: Tuple[float, float],
+    y_range: Tuple[float, float],
+    z_range: Tuple[float, float],
+) -> np.ndarray:
+    """
+    Drop points (already in base_link) inside the vehicle's own bounding box.
+
+    Without this, the vehicle's own chassis -- the closest, most persistent,
+    most geometrically detailed thing any beam can see -- is eligible to be
+    detected as an obstacle sitting next to itself, and is a likely
+    contributor to voxel flicker right around the sensor (see
+    ground_plane_ransac_seed / the grid log-odds: this is a different,
+    upstream cause those don't address). The box defaults come from
+    IGVC_ROS2's measured chassis dimensions, not this repo's own placeholder
+    URDF -- see node docstring for the derivation.
+    """
+    if points_xyz.shape[0] == 0:
+        return points_xyz
+    inside = (
+        (points_xyz[:, 0] >= x_range[0]) & (points_xyz[:, 0] <= x_range[1])
+        & (points_xyz[:, 1] >= y_range[0]) & (points_xyz[:, 1] <= y_range[1])
+        & (points_xyz[:, 2] >= z_range[0]) & (points_xyz[:, 2] <= z_range[1])
+    )
+    return points_xyz[~inside]
+
+
 def transform_matrix_from_stamped(tf: TransformStamped) -> np.ndarray:
     """
     Build a 4x4 homogeneous transform matrix from a TransformStamped.
@@ -262,6 +290,20 @@ class LidarPreprocessorNode(Node):
         self.declare_parameter("height_band_max", 3.0)
         self.declare_parameter("sensor_timeout_sec", 0.5)
 
+        # Self-footprint exclusion box, in base_link. Defaults are the union
+        # bounding box of IGVC_ROS2's measured chassis geometry (main body +
+        # top sensor platform + both tread enclosures, from avros.urdf.xacro,
+        # resurveyed 2026-05-06) plus a 0.05m margin, NOT this repo's own
+        # placeholder vehicle.urdf.xacro (which has no collision geometry).
+        # Re-derive these if the real chassis is measured directly, or if
+        # this vehicle's dimensions differ from IGVC_ROS2's.
+        self.declare_parameter("footprint_x_min", -0.23)
+        self.declare_parameter("footprint_x_max", 0.78)
+        self.declare_parameter("footprint_y_min", -0.46)
+        self.declare_parameter("footprint_y_max", 0.46)
+        self.declare_parameter("footprint_z_min", -0.05)
+        self.declare_parameter("footprint_z_max", 0.72)
+
         self.sensor_frame = self.get_parameter("sensor_frame").value
         self.target_frame = self.get_parameter("target_frame").value
         self.sensor_timeout_sec = self.get_parameter("sensor_timeout_sec").value
@@ -328,6 +370,21 @@ class LidarPreprocessorNode(Node):
 
         matrix = transform_matrix_from_stamped(tf)
         points_base = apply_transform(points, matrix)
+        points_base = remove_self_footprint(
+            points_base,
+            x_range=(
+                self.get_parameter("footprint_x_min").value,
+                self.get_parameter("footprint_x_max").value,
+            ),
+            y_range=(
+                self.get_parameter("footprint_y_min").value,
+                self.get_parameter("footprint_y_max").value,
+            ),
+            z_range=(
+                self.get_parameter("footprint_z_min").value,
+                self.get_parameter("footprint_z_max").value,
+            ),
+        )
 
         distance_threshold = self.get_parameter("ransac_distance_threshold").value
         candidate_coeffs, _ = fit_ground_plane_ransac(

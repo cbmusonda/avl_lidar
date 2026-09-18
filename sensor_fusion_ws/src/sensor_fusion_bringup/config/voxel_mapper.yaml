@@ -26,3 +26,7 @@ voxel_mapper:
     decay_rate_hz: 2.0
     inflation_radius: 1.2
     enable_raycasting: true
+    hit_logodds: 0.85
+    miss_logodds: -0.4
+    logodds_min: -0.8
+    logodds_max: 2.0

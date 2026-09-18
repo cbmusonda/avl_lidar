@@ -48,6 +48,10 @@ class VoxelMapperNode(Node):
         self.declare_parameter("decay_rate_hz", 2.0)
         self.declare_parameter("inflation_radius", 1.2)
         self.declare_parameter("enable_raycasting", True)
+        self.declare_parameter("hit_logodds", 0.85)
+        self.declare_parameter("miss_logodds", -0.4)
+        self.declare_parameter("logodds_min", -0.8)
+        self.declare_parameter("logodds_max", 2.0)
 
         self.inflation_radius = self.get_parameter("inflation_radius").value
         self.enable_raycasting = self.get_parameter("enable_raycasting").value
@@ -67,6 +71,10 @@ class VoxelMapperNode(Node):
             ),
             resolution=self.get_parameter("resolution").value,
             persistence_sec=self.get_parameter("persistence_sec").value,
+            hit_logodds=self.get_parameter("hit_logodds").value,
+            miss_logodds=self.get_parameter("miss_logodds").value,
+            logodds_min=self.get_parameter("logodds_min").value,
+            logodds_max=self.get_parameter("logodds_max").value,
         )
 
         sensor_qos = QoSProfile(

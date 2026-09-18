@@ -156,6 +156,112 @@ def test_raycast_ignores_out_of_bounds_origin():
     assert np.all(grid.cost == UNKNOWN)
 
 
+# ---- log-odds evidence (flicker resistance) --------------------------------
+
+
+def _line_setup(grid):
+    origin = np.array([0.5, 0.5, 0.5])
+    oi = grid.world_to_index(*origin)
+    near = grid.index_to_world(oi[0] + 2, oi[1], oi[2])
+    far = grid.index_to_world(oi[0] + 5, oi[1], oi[2])
+    return origin, np.array([near]), np.array([far]), grid.world_to_index(*near)
+
+
+def test_single_hit_makes_cell_occupied():
+    """Reaction speed: one frame is enough to see a new obstacle."""
+    grid = make_grid(resolution=1.0)
+    origin, near, _, near_idx = _line_setup(grid)
+    grid.raycast_update(origin, near, timestamp=1.0)
+    assert grid.cost[near_idx] == OCCUPIED
+
+
+def test_single_hit_cell_clears_after_three_misses():
+    grid = make_grid(resolution=1.0)
+    origin, near, far, near_idx = _line_setup(grid)
+    grid.raycast_update(origin, near, timestamp=1.0)
+    for i in range(2):
+        grid.raycast_update(origin, far, timestamp=1.1 + i * 0.1)
+        assert grid.cost[near_idx] == OCCUPIED
+    grid.raycast_update(origin, far, timestamp=1.3)
+    assert grid.cost[near_idx] == FREE
+
+
+def test_confirmed_cell_survives_four_misses_and_clears_on_fifth():
+    grid = make_grid(resolution=1.0)
+    origin, near, far, near_idx = _line_setup(grid)
+    for i in range(5):  # hits reach the +2.0 ceiling
+        grid.raycast_update(origin, near, timestamp=1.0 + i * 0.1)
+    for i in range(4):
+        grid.raycast_update(origin, far, timestamp=2.0 + i * 0.1)
+        assert grid.cost[near_idx] == OCCUPIED
+    grid.raycast_update(origin, far, timestamp=2.5)
+    assert grid.cost[near_idx] == FREE
+
+
+def test_hit_between_misses_restores_evidence():
+    grid = make_grid(resolution=1.0)
+    origin, near, far, near_idx = _line_setup(grid)
+    for i in range(5):
+        grid.raycast_update(origin, near, timestamp=1.0 + i * 0.1)
+    for i in range(3):
+        grid.raycast_update(origin, far, timestamp=2.0 + i * 0.1)
+    grid.raycast_update(origin, near, timestamp=2.5)
+    for i in range(3):
+        grid.raycast_update(origin, far, timestamp=2.6 + i * 0.1)
+    assert grid.cost[near_idx] == OCCUPIED
+
+
+def test_logodds_is_clamped():
+    grid = make_grid(resolution=1.0)
+    origin, near, far, near_idx = _line_setup(grid)
+    for i in range(20):
+        grid.raycast_update(origin, near, timestamp=1.0 + i * 0.1)
+    assert grid.logodds[near_idx] == pytest.approx(grid.logodds_max)
+    for i in range(20):
+        grid.raycast_update(origin, far, timestamp=4.0 + i * 0.1)
+    assert grid.logodds[near_idx] == pytest.approx(grid.logodds_min)
+
+
+def test_multiple_rays_through_same_cell_in_one_frame_count_as_one_miss():
+    """Dense scans near the sensor must not use up a cell's evidence in one frame."""
+    grid = make_grid(resolution=1.0)
+    origin = np.array([0.5, 0.5, 0.5])
+    oi = grid.world_to_index(*origin)
+    static_idx = (oi[0] + 2, oi[1], oi[2])
+    grid.cost[static_idx] = OCCUPIED
+    grid.logodds[static_idx] = grid.logodds_max
+
+    far_a = grid.index_to_world(oi[0] + 5, oi[1], oi[2])
+    far_b = grid.index_to_world(oi[0] + 6, oi[1], oi[2])
+    grid.raycast_update(origin, np.array([far_a, far_b]), timestamp=1.0)
+
+    assert grid.cost[static_idx] == OCCUPIED
+    assert grid.logodds[static_idx] == pytest.approx(
+        grid.logodds_max + grid.miss_logodds
+    )
+
+
+def test_miss_does_not_refresh_timestamp():
+    grid = make_grid(resolution=1.0)
+    origin, near, far, near_idx = _line_setup(grid)
+    for i in range(5):
+        grid.raycast_update(origin, near, timestamp=1.0)
+    grid.raycast_update(origin, far, timestamp=5.0)
+    assert grid.timestamp[near_idx] == 1.0
+
+
+def test_decay_resets_logodds_on_stale_occupied():
+    grid = make_grid(resolution=1.0, persistence_sec=2.0)
+    idx = (5, 5, 1)
+    grid.cost[idx] = OCCUPIED
+    grid.logodds[idx] = 2.0
+    grid.timestamp[idx] = 0.0
+
+    grid.decay(now=3.0)
+    assert grid.cost[idx] == UNKNOWN
+    assert grid.logodds[idx] == 0.0
+
+
 # ---- decay ----------------------------------------------------------------
 
 

@@ -14,6 +14,7 @@ from voxel_mapper.lidar_preprocessor import (
     pointcloud2_to_xyz_array,
     range_filter,
     remove_ground,
+    remove_self_footprint,
     smooth_plane,
     transform_matrix_from_stamped,
 )
@@ -178,6 +179,34 @@ def test_classify_ground_inliers_empty_points():
     points = np.empty((0, 3))
     mask = classify_ground_inliers(points, plane, distance_threshold=0.05)
     assert mask.shape == (0,)
+
+
+# ---- self-footprint exclusion ------------------------------------------
+
+
+def test_remove_self_footprint_drops_points_inside_box():
+    points = np.array([[0.3, 0.0, 0.3], [5.0, 5.0, 5.0], [-0.1, 0.4, 0.1]])
+    filtered = remove_self_footprint(
+        points, x_range=(-0.23, 0.78), y_range=(-0.46, 0.46), z_range=(-0.05, 0.72)
+    )
+    assert filtered.shape[0] == 1
+    assert np.allclose(filtered[0], [5.0, 5.0, 5.0])
+
+
+def test_remove_self_footprint_keeps_points_outside_box():
+    points = np.array([[1.0, 0.0, 0.3], [0.3, 1.0, 0.3], [0.3, 0.0, 1.0]])
+    filtered = remove_self_footprint(
+        points, x_range=(-0.23, 0.78), y_range=(-0.46, 0.46), z_range=(-0.05, 0.72)
+    )
+    assert filtered.shape[0] == 3
+
+
+def test_remove_self_footprint_empty_points():
+    points = np.empty((0, 3))
+    filtered = remove_self_footprint(
+        points, x_range=(-0.23, 0.78), y_range=(-0.46, 0.46), z_range=(-0.05, 0.72)
+    )
+    assert filtered.shape == (0, 3)
 
 
 # ---- height band ------------------------------------------------------
