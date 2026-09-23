@@ -262,29 +262,32 @@ Create a dedicated workspace rather than modifying the SLAM package directly:
 ```text
 sensor_fusion_ws/
 └── src/
-    ├── sensor_fusion_bringup/
-    │   ├── launch/
-    │   │   ├── sensors.launch.py
-    │   │   ├── odometry.launch.py
-    │   │   ├── voxel_mapping.launch.py
-    │   │   └── integration.launch.py
-    │   ├── config/
-    │   │   ├── velodyne.yaml
-    │   │   ├── xsens.yaml
-    │   │   ├── voxel_mapper.yaml
-    │   │   └── robot_localization.yaml
-    │   └── urdf/
-    │       └── vehicle.urdf.xacro
-    │
     └── voxel_mapper/
+        ├── launch/
+        │   ├── sensors.launch.py
+        │   ├── odometry.launch.py
+        │   ├── voxel_mapping.launch.py
+        │   └── integration.launch.py
+        ├── config/
+        │   ├── velodyne.yaml
+        │   ├── xsens.yaml
+        │   ├── ekf.yaml
+        │   ├── navsat.yaml
+        │   ├── voxel_mapper.yaml
+        │   └── cyclonedds.xml
+        ├── rviz/
+        │   └── sensor_fusion.rviz
+        ├── urdf/
+        │   └── vehicle.urdf.xacro
         ├── voxel_mapper/
         │   ├── lidar_preprocessor.py
         │   ├── voxel_grid.py
         │   └── voxel_mapper_node.py
-        ├── test/
         ├── setup.py
         └── package.xml
 ```
+
+The bringup launch/config/rviz/urdf originally sketched as a separate `sensor_fusion_bringup` package were folded into `voxel_mapper` itself to keep the workspace to a single package, easier to drop into another repo later. No camera driver, camera URDF mount, or camera topic exists anywhere in this package -- it is LiDAR + IMU + GPS odometry only, matching the "no depth cameras in v1" constraint above. The one inert placeholder that referenced a ZED camera topic (an unused `odom1` fusion slot in `ekf.yaml`) has been removed rather than left as dead config.
 
 Use two nodes initially:
 

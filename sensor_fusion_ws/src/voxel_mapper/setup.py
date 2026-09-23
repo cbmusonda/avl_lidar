@@ -1,3 +1,6 @@
+import os
+from glob import glob
+
 from setuptools import find_packages, setup
 
 package_name = 'voxel_mapper'
@@ -10,12 +13,16 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
+        (os.path.join('share', package_name, 'config'), glob('config/*')),
+        (os.path.join('share', package_name, 'rviz'), glob('rviz/*.rviz')),
+        (os.path.join('share', package_name, 'urdf'), glob('urdf/*.xacro')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='Bradley Musonda',
     maintainer_email='bradley.musonda@gmail.com',
-    description='LiDAR preprocessing and 3D voxel obstacle mapping for ROS 2',
+    description='LiDAR-only sensor bring-up, IMU/GPS odometry, and 3D voxel obstacle mapping for ROS 2',
     license='Apache-2.0',
     extras_require={
         'test': [
@@ -26,7 +33,6 @@ setup(
         'console_scripts': [
             'lidar_preprocessor = voxel_mapper.lidar_preprocessor:main',
             'voxel_mapper_node = voxel_mapper.voxel_mapper_node:main',
-            'fake_lidar_publisher = voxel_mapper.fake_lidar_publisher:main',
         ],
     },
 )

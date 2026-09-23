@@ -10,8 +10,8 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    bringup_share = get_package_share_directory('sensor_fusion_bringup')
-    voxel_config = os.path.join(bringup_share, 'config', 'voxel_mapper.yaml')
+    voxel_mapper_share = get_package_share_directory('voxel_mapper')
+    voxel_config = os.path.join(voxel_mapper_share, 'config', 'voxel_mapper.yaml')
 
     use_sim_time = LaunchConfiguration('use_sim_time')
     enable_raycasting = LaunchConfiguration('enable_raycasting')

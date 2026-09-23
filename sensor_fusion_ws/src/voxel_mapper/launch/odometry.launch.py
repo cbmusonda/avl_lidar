@@ -31,9 +31,9 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    bringup_share = get_package_share_directory('sensor_fusion_bringup')
-    ekf_config = os.path.join(bringup_share, 'config', 'ekf.yaml')
-    navsat_config = os.path.join(bringup_share, 'config', 'navsat.yaml')
+    voxel_mapper_share = get_package_share_directory('voxel_mapper')
+    ekf_config = os.path.join(voxel_mapper_share, 'config', 'ekf.yaml')
+    navsat_config = os.path.join(voxel_mapper_share, 'config', 'navsat.yaml')
 
     use_sim_time = LaunchConfiguration('use_sim_time')
     enable_odometry = LaunchConfiguration('enable_odometry')

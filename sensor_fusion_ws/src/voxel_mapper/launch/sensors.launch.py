@@ -17,10 +17,10 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    bringup_share = get_package_share_directory('sensor_fusion_bringup')
-    urdf_path = os.path.join(bringup_share, 'urdf', 'vehicle.urdf.xacro')
-    velodyne_config = os.path.join(bringup_share, 'config', 'velodyne.yaml')
-    xsens_config = os.path.join(bringup_share, 'config', 'xsens.yaml')
+    voxel_mapper_share = get_package_share_directory('voxel_mapper')
+    urdf_path = os.path.join(voxel_mapper_share, 'urdf', 'vehicle.urdf.xacro')
+    velodyne_config = os.path.join(voxel_mapper_share, 'config', 'velodyne.yaml')
+    xsens_config = os.path.join(voxel_mapper_share, 'config', 'xsens.yaml')
 
     use_sim_time = LaunchConfiguration('use_sim_time')
     enable_lidar = LaunchConfiguration('enable_lidar')

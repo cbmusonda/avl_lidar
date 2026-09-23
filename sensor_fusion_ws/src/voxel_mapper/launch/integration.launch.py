@@ -25,9 +25,9 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    bringup_share = get_package_share_directory('sensor_fusion_bringup')
-    rviz_config = os.path.join(bringup_share, 'rviz', 'sensor_fusion.rviz')
-    cyclonedds_config = os.path.join(bringup_share, 'config', 'cyclonedds.xml')
+    voxel_mapper_share = get_package_share_directory('voxel_mapper')
+    rviz_config = os.path.join(voxel_mapper_share, 'rviz', 'sensor_fusion.rviz')
+    cyclonedds_config = os.path.join(voxel_mapper_share, 'config', 'cyclonedds.xml')
 
     use_sim_time = LaunchConfiguration('use_sim_time')
 
@@ -51,13 +51,13 @@ def generate_launch_description():
         SetEnvironmentVariable('CYCLONEDDS_URI', 'file://' + cyclonedds_config),
     ]
 
-    bringup_share_sub = FindPackageShare('sensor_fusion_bringup')
+    voxel_mapper_share_sub = FindPackageShare('voxel_mapper')
 
-    def bringup_launch_file(name):
-        return PathJoinSubstitution([bringup_share_sub, 'launch', name])
+    def voxel_mapper_launch_file(name):
+        return PathJoinSubstitution([voxel_mapper_share_sub, 'launch', name])
 
     sensors = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(bringup_launch_file('sensors.launch.py')),
+        PythonLaunchDescriptionSource(voxel_mapper_launch_file('sensors.launch.py')),
         launch_arguments={
             'use_sim_time': use_sim_time,
             'enable_lidar': LaunchConfiguration('enable_lidar'),
@@ -68,7 +68,7 @@ def generate_launch_description():
     )
 
     odometry = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(bringup_launch_file('odometry.launch.py')),
+        PythonLaunchDescriptionSource(voxel_mapper_launch_file('odometry.launch.py')),
         launch_arguments={
             'use_sim_time': use_sim_time,
             'enable_odometry': LaunchConfiguration('enable_odometry'),
@@ -77,7 +77,7 @@ def generate_launch_description():
     )
 
     voxel_mapping = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(bringup_launch_file('voxel_mapping.launch.py')),
+        PythonLaunchDescriptionSource(voxel_mapper_launch_file('voxel_mapping.launch.py')),
         launch_arguments={
             'use_sim_time': use_sim_time,
             'enable_raycasting': LaunchConfiguration('enable_raycasting'),

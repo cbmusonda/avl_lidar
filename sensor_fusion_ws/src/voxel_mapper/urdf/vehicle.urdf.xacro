@@ -29,8 +29,4 @@
     <origin xyz="${velodyne_xyz}" rpy="0 0 0"/>
   </joint>
 
-  <!-- Future depth-camera mounts (zed_front, zed_left, ...) go here,
-       using vendor-provided camera URDF macros per IGVC_ROS2 convention.
-       Not required for the v1 LiDAR/IMU-only deliverable. -->
-
 </robot>

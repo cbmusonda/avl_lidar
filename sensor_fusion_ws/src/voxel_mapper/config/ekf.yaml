@@ -8,16 +8,6 @@
 # found skid-steer wheel-based yaw unreliable and standardized on the Xsens
 # gyro as the sole yaw source. Follow that here unless your drivetrain is
 # proven otherwise.
-#
-# ZED VIO yaw-rate fusion (odom1 on the local EKF) is included but inert
-# until a depth camera is added and actually publishes
-# /zed_front/zed_node/odom -- SENSOR_FUSION_BRIEF.md requires cameras not be
-# needed for this deliverable, so this block is a no-op by default, not a
-# runtime dependency. If you do wire a ZED camera in later, fuse yaw only
-# (odom1_config below) -- IGVC_ROS2 found that fusing the camera's x/y
-# position injects a fake lateral velocity on turns, because
-# robot_localization's differential fusion has no lever-arm (omega x r)
-# correction for an off-center camera mount.
 
 # --- Local EKF: odom -> base_link ---
 ekf_filter_node_odom:
@@ -55,17 +45,6 @@ ekf_filter_node_odom:
     odom0_differential: false
     odom0_relative: false
     odom0_queue_size: 10
-
-    # ZED VIO, yaw rate only, inert until a camera publishes this topic.
-    odom1: /zed_front/zed_node/odom
-    odom1_config: [false, false, false,
-                   false, false, true,
-                   false, false, false,
-                   false, false, false,
-                   false, false, false]
-    odom1_differential: true
-    odom1_relative: false
-    odom1_queue_size: 10
 
     process_noise_covariance: [1e-3, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
                                0.0,  1e-3, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
