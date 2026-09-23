@@ -1,7 +1,7 @@
 # ROS 2 generated workspace artifacts
-sensor_fusion_ws/build/
-sensor_fusion_ws/install/
-sensor_fusion_ws/log/
+lidar_ws/build/
+lidar_ws/install/
+lidar_ws/log/
 
 # Python generated files
 **/__pycache__/
