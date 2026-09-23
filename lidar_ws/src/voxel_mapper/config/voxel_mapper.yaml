@@ -13,10 +13,11 @@ lidar_preprocessor:
     ransac_iterations: 50
     ransac_candidate_band: 0.5
     ransac_distance_threshold: 0.1
-    height_band_min: -0.8
-    # Matches voxel_mapper's z_max below (4 ft above z_min) so obstacle
-    # points above the voxel grid's ceiling get dropped here instead of
-    # doing a wasted round trip to voxel_mapper first.
+    # Matches voxel_mapper's z_min/z_max below exactly, so the full 4 ft
+    # band above the grid's lowest point is actually usable -- previously
+    # height_band_min was -0.8 while the grid's z_min was -1.0, so the
+    # bottom ~0.66 ft of the grid never got any points to raycast into.
+    height_band_min: -1.0
     height_band_max: 0.22
     sensor_timeout_sec: 0.5
 
