@@ -29,8 +29,9 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Best Effort
-      Enabled: true
+      Enabled: false
       Color: 255; 0; 0
+      Color Transformer: FlatColor
       Size (m): 0.25
       Style: Boxes
     - Class: rviz_default_plugins/PointCloud2
@@ -48,7 +49,7 @@ Visualization Manager:
       Name: VoxelMarkers
       Topic:
         Value: /perception/voxel_markers
-      Enabled: false
+      Enabled: true
     - Class: rviz_default_plugins/Map
       Name: ObstacleCostmap2D
       Topic:
