@@ -5,12 +5,19 @@ lidar_preprocessor:
     target_frame: base_link
     range_min: 0.5
     range_max: 50.0
+    # VLP-16's 16 lasers already span exactly -15/+15 deg; this is a
+    # safety net, not an active crop, unless the sensor changes.
+    vertical_fov_min_deg: -15.0
+    vertical_fov_max_deg: 15.0
     downsample_voxel_size: 0.2
     ransac_iterations: 50
     ransac_candidate_band: 0.5
     ransac_distance_threshold: 0.1
     height_band_min: -0.8
-    height_band_max: 3.0
+    # Matches voxel_mapper's z_max below (4 ft above z_min) so obstacle
+    # points above the voxel grid's ceiling get dropped here instead of
+    # doing a wasted round trip to voxel_mapper first.
+    height_band_max: 0.22
     sensor_timeout_sec: 0.5
 
 voxel_mapper:
@@ -21,7 +28,9 @@ voxel_mapper:
     y_min: -20.0
     y_max: 20.0
     z_min: -1.0
-    z_max: 3.0
+    # 4 ft (1.2192 m) above z_min -- the grid only sees 4 ft above its
+    # lowest point.
+    z_max: 0.22
     persistence_sec: 2.0
     decay_rate_hz: 2.0
     inflation_radius: 1.2

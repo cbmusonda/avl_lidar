@@ -58,6 +58,28 @@ def range_filter(
     return points_xyz[mask]
 
 
+def vertical_fov_filter(
+    points_xyz: np.ndarray, min_deg: float, max_deg: float
+) -> np.ndarray:
+    """
+    Keep points whose elevation angle from the sensor origin is in range.
+
+    Must be called on points still in the sensor's own frame (e.g.
+    `velodyne`) for the same reason as range_filter -- elevation is the
+    angle off the sensor's own boresight, not base_link's. The VLP-16's
+    16 lasers already span exactly -15 to +15 degrees, so with the
+    defaults this is a no-op safety net rather than an actual crop; it
+    only starts cropping real data if the sensor is ever swapped for one
+    with a wider vertical spread.
+    """
+    if points_xyz.shape[0] == 0:
+        return points_xyz
+    horizontal = np.linalg.norm(points_xyz[:, :2], axis=1)
+    elevation_deg = np.degrees(np.arctan2(points_xyz[:, 2], horizontal))
+    mask = (elevation_deg >= min_deg) & (elevation_deg <= max_deg)
+    return points_xyz[mask]
+
+
 def downsample_voxel(points_xyz: np.ndarray, voxel_size: float) -> np.ndarray:
     """Reduce to one representative point per voxel_size cube."""
     if points_xyz.shape[0] == 0:
@@ -280,6 +302,8 @@ class LidarPreprocessorNode(Node):
         self.declare_parameter("target_frame", "base_link")
         self.declare_parameter("range_min", 0.5)
         self.declare_parameter("range_max", 50.0)
+        self.declare_parameter("vertical_fov_min_deg", -15.0)
+        self.declare_parameter("vertical_fov_max_deg", 15.0)
         self.declare_parameter("downsample_voxel_size", 0.2)
         self.declare_parameter("ransac_iterations", 50)
         self.declare_parameter("ransac_candidate_band", 0.5)
@@ -363,6 +387,11 @@ class LidarPreprocessorNode(Node):
             points,
             self.get_parameter("range_min").value,
             self.get_parameter("range_max").value,
+        )
+        points = vertical_fov_filter(
+            points,
+            self.get_parameter("vertical_fov_min_deg").value,
+            self.get_parameter("vertical_fov_max_deg").value,
         )
         points = downsample_voxel(
             points, self.get_parameter("downsample_voxel_size").value
