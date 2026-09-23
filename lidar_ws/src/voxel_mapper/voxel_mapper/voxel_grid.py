@@ -161,6 +161,56 @@ class VoxelGrid:
 
     # ---- mutation -------------------------------------------------------
 
+    def _clip_segment_to_grid(
+        self, p0: np.ndarray, p1: np.ndarray
+    ) -> Optional[Tuple[np.ndarray, np.ndarray]]:
+        """
+        Clip world-space segment p0->p1 to this grid's AABB (slab method).
+
+        Returns the clipped (start, end) points, nudged slightly inward so
+        they land in a valid cell rather than exactly on a boundary face,
+        or None if the segment never enters the grid. Needed because the
+        sensor origin is not guaranteed to sit inside a grid clamped to a
+        thin z-band -- the sensor can be (and for a ground-hugging band,
+        typically is) mounted above the slice it's scanning into. Clipping
+        the ray to the grid, rather than requiring the raw origin to
+        already be inside it, still lets the portion of each ray that
+        passes through the grid mark free/occupied cells.
+        """
+        bounds_min = np.array(self.origin, dtype=np.float64)
+        bounds_max = bounds_min + np.array([self.nx, self.ny, self.nz]) * self.resolution
+        p0 = np.asarray(p0, dtype=np.float64)
+        p1 = np.asarray(p1, dtype=np.float64)
+        direction = p1 - p0
+
+        t_min, t_max = 0.0, 1.0
+        for axis in range(3):
+            if abs(direction[axis]) < 1e-12:
+                if p0[axis] < bounds_min[axis] or p0[axis] > bounds_max[axis]:
+                    return None
+                continue
+            t1 = (bounds_min[axis] - p0[axis]) / direction[axis]
+            t2 = (bounds_max[axis] - p0[axis]) / direction[axis]
+            if t1 > t2:
+                t1, t2 = t2, t1
+            t_min = max(t_min, t1)
+            t_max = min(t_max, t2)
+            if t_min > t_max:
+                return None
+
+        clipped_start = p0 + t_min * direction
+        clipped_end = p0 + t_max * direction
+        seg_len = np.linalg.norm(clipped_end - clipped_start)
+        if seg_len > 1e-9:
+            # Nudge both ends inward by a fixed, resolution-negligible
+            # distance so floor() lands in a valid cell instead of
+            # exactly on the boundary face it's clipped to.
+            unit_dir = (clipped_end - clipped_start) / seg_len
+            nudge = min(1e-4, seg_len / 2)
+            clipped_start = clipped_start + unit_dir * nudge
+            clipped_end = clipped_end - unit_dir * nudge
+        return clipped_start, clipped_end
+
     def raycast_update(
         self,
         origin_xyz: np.ndarray,
@@ -181,15 +231,26 @@ class VoxelGrid:
         Hits refresh the cell's timestamp; misses do not, so decay() can
         still expire cells that are no longer being hit.
         """
-        origin_idx = self.world_to_index(*origin_xyz)
-        if origin_idx is None:
-            return
+        origin_xyz = np.asarray(origin_xyz, dtype=np.float64)
 
         endpoint_cells = set()
         intermediate_cells = set()
         for point in points_xyz:
+            # The true endpoint must itself be a valid cell -- an
+            # out-of-grid point (e.g. beyond x/y range) is skipped
+            # entirely, same as before this method clipped rays.
             end_idx = self.world_to_index(*point)
             if end_idx is None:
+                continue
+            # Only the ray's start gets clipped to the grid: the origin
+            # (sensor position) need not itself be inside the grid, e.g.
+            # a sensor mounted above a thin ground-hugging z-band.
+            clipped = self._clip_segment_to_grid(origin_xyz, point)
+            if clipped is None:
+                continue
+            clipped_origin, _ = clipped
+            origin_idx = self.world_to_index(*clipped_origin)
+            if origin_idx is None:
                 continue
             cells = bresenham3d(origin_idx, end_idx)
             for cell in cells[:-1]:
