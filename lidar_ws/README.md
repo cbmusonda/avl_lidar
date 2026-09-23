@@ -1,7 +1,7 @@
-# sensor_fusion_ws
+# lidar_ws
 
 ROS 2 Humble workspace implementing the first deliverable from
-`../SENSOR_FUSION_BRIEF.md`: Velodyne VLP-16 + Xsens MTi-680G + TF/URDF ->
+`../LIDAR_BRIEF.md`: Velodyne VLP-16 + Xsens MTi-680G + TF/URDF ->
 filtered obstacle points -> raycasted 3D voxel grid, in `base_link`.
 
 Depth cameras, path planning, and full SLAM are explicitly out of scope for
@@ -9,10 +9,12 @@ this package; see the brief for the longer-term plan.
 
 ## Packages
 
-- `voxel_mapper` — the two nodes (`lidar_preprocessor`, `voxel_mapper_node`)
-  and the pure `voxel_grid.py`/`lidar_preprocessor.py` logic they wrap.
-- `sensor_fusion_bringup` — launch files, config YAMLs, URDF, RViz config.
-  No nodes of its own.
+- `voxel_mapper` — the only package in this workspace: the two nodes
+  (`lidar_preprocessor`, `voxel_mapper_node`), the pure `voxel_grid.py`/
+  `lidar_preprocessor.py` logic they wrap, and all launch files, config
+  YAMLs, URDF, and RViz config (originally sketched as a separate
+  `sensor_fusion_bringup` package, folded in here instead — see
+  `../LIDAR_BRIEF.md`).
 
 ## Odometry
 
@@ -93,7 +95,7 @@ PYTHONPATH="$(pwd):$PYTHONPATH" python3 -m pytest test/ -v
 
 ```bash
 source install/setup.bash
-ros2 launch sensor_fusion_bringup integration.launch.py \
+ros2 launch voxel_mapper integration.launch.py \
     enable_lidar:=true enable_xsens:=true enable_odometry:=true \
     publish_rviz:=true
 ```
@@ -110,7 +112,7 @@ out, correctly separating a synthetic ground plane from a synthetic
 obstacle cluster). `sensors.launch.py` and `odometry.launch.py` require
 the driver packages above (plus `/wheel_odom` and `/gnss` publishers) and
 real (or simulated) hardware to exercise, and were only verified to parse
-correctly (`ros2 launch sensor_fusion_bringup <file> --show-args`) in this
+correctly (`ros2 launch voxel_mapper <file> --show-args`) in this
 environment — `robot_localization` isn't installed in this sandbox either.
 
 ## Known verification gaps (need the real robot)

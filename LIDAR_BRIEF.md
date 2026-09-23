@@ -260,7 +260,7 @@ The Pegasus sensor subscribers use BEST_EFFORT QoS with KEEP_LAST history. This 
 Create a dedicated workspace rather than modifying the SLAM package directly:
 
 ```text
-sensor_fusion_ws/
+lidar_ws/
 └── src/
     └── voxel_mapper/
         ├── launch/
@@ -276,7 +276,7 @@ sensor_fusion_ws/
         │   ├── voxel_mapper.yaml
         │   └── cyclonedds.xml
         ├── rviz/
-        │   └── sensor_fusion.rviz
+        │   └── lidar.rviz
         ├── urdf/
         │   └── vehicle.urdf.xacro
         ├── voxel_mapper/

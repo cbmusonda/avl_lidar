@@ -26,7 +26,7 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     voxel_mapper_share = get_package_share_directory('voxel_mapper')
-    rviz_config = os.path.join(voxel_mapper_share, 'rviz', 'sensor_fusion.rviz')
+    rviz_config = os.path.join(voxel_mapper_share, 'rviz', 'lidar.rviz')
     cyclonedds_config = os.path.join(voxel_mapper_share, 'config', 'cyclonedds.xml')
 
     use_sim_time = LaunchConfiguration('use_sim_time')
